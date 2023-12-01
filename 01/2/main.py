@@ -13,27 +13,16 @@ numbermap = {
     'nine': 9,
 }
 
-def contains_numberwords(line_in):
-    for word in numbermap:
-        if word in line_in:
-            return True
-
-    return False
-
-
 def replace_numberwords(line_in):
-    while contains_numberwords(line_in):
-        firstmatch = False
+    inserts = {}
+    inserts_done = 0
+    for word in numbermap:
+        inserts[word] = [m.start() for m in re.finditer(word, line_in)]
 
-        for word in numbermap:
-            if word in line_in:
-                if firstmatch:
-                    if line_in.find(word) < line_in.find(firstmatch):
-                        firstmatch = word
-                else:
-                    firstmatch = word
-
-        line_in = re.sub(firstmatch, str(numbermap[firstmatch]), line_in, 1)
+    for word in inserts:
+        for place in inserts[word]:
+            line_in = line_in[:place+inserts_done] + str(numbermap[word]) + line_in[place+inserts_done:]
+            inserts_done += 1
 
     return line_in
 
