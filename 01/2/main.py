@@ -13,26 +13,28 @@ numbermap = {
     'nine': 9,
 }
 
-def replace_numberwords(line_in):
-    matches = []
-
+def contains_numberwords(line_in):
     for word in numbermap:
         if word in line_in:
-            if len(matches) == 0:
-                matches.append(word)
-            else:
-                for i, match in enumerate(matches):
-                    if line_in.find(word) < line_in.find(match):
-                        matches.insert(i, word)
-                        break
-                    elif i+1 == len(matches):
-                        matches.append(word)
-                        break
+            return True
 
-    for match in matches:
-        line_in = re.sub(match, str(numbermap[match]), line_in, 1)
+    return False
 
-    print(line_in)
+
+def replace_numberwords(line_in):
+    while contains_numberwords(line_in):
+        firstmatch = False
+
+        for word in numbermap:
+            if word in line_in:
+                if firstmatch:
+                    if line_in.find(word) < line_in.find(firstmatch):
+                        firstmatch = word
+                else:
+                    firstmatch = word
+
+        line_in = re.sub(firstmatch, str(numbermap[firstmatch]), line_in, 1)
+
     return line_in
 
 def extract_numbers(line_in):
