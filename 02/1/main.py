@@ -2,6 +2,7 @@
 
 
 class Set():
+    """Represents a single set in a game."""
     
     def __init__(self, green=0, blue=0, red=0):
         self.green = int(green)
@@ -9,6 +10,7 @@ class Set():
         self.red = int(red)
 
     def possible(self, reference):
+        """Check if a set is possible, against a reference set."""
         if self.green > reference.green:
             return False
         if self.blue > reference.blue:
@@ -20,6 +22,12 @@ class Set():
 
     @classmethod
     def fromstring(cls, text):
+        """Create a set, from a string.
+        
+        String has to look like: '14 red, 9 green, 5 blue'
+        """
+        # For jonna: cls() here is the same as using Set() outside of this class.
+        # it creates a new instance of a set. Which we later return.
         newset = cls()
 
         for colorgroup in text.split(','):
@@ -34,12 +42,17 @@ class Set():
 
 
 class Game():
+    """Represents a single game, containing multiple sets."""
 
     def __init__(self, id, sets):
         self.id = int(id)
         self.sets = sets
 
     def possible(self, reference):
+        """Check if the game is possible.
+
+        Checks a reference set against every set in the game.
+        """
         for set in self.sets:
             if not set.possible(reference):
                 return False
@@ -48,6 +61,7 @@ class Game():
 
     @classmethod
     def fromline(cls, line):
+        """Create a game from a complete input line."""
         id = line.split(':')[0].split(' ')[1]
         sets = line.split(':')[1].strip('\n').split(';')
 
@@ -59,13 +73,16 @@ class Game():
 
 def main():
     games = []
+    # We create a reference set that we can check the sets in the game against
     reference = Set(green=13, blue=14, red=12)
     possible_games = []
 
+    # First we just create games from lines
     with open('input', 'r') as f:
         for line in f.readlines():
             games.append(Game.fromline(line))
 
+    # Then we check if a game is possible and add it to the list
     for game in games:
         if game.possible(reference):
             possible_games.append(game.id)
