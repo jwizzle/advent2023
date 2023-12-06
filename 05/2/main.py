@@ -10,14 +10,14 @@ class MapEntry():
         self.length = int(length)
 
     def src_from_dst(self, dst):
-        """Get a matching src for a dst in this range. Or false."""
+        """Get a matching src for a dst in this range."""
         last_num = self.dst_start + self.length - 1
 
         if dst <= last_num and dst >= self.dst_start:
             diff = dst - self.dst_start
             return self.src_start + diff
         else:
-            return False
+            return dst
 
     @classmethod
     def from_line(cls, line):
@@ -38,45 +38,40 @@ class Map():
         self.source = source
         self.destination = destination
 
-    def get_destination(self, input):
-        """Get the destination of input. Can be seed, soil, etc.
-
-        Basically we just check if a number falls between the start and end.
-        If it does we use the difference between the source and input, and
-        use that to determine the destination.
-        """
+    def get_src(self, input):
+        """Get the source needed for a given destination."""
         for entry in self.entries:
-            last_num = entry.src_start + entry.length - 1
+            last_num = entry.dst_start + entry.length - 1
 
-            if input <= last_num and input >= entry.src_start:
-                diff = input - entry.src_start
-                return entry.dst_start + diff
+            if input <= last_num and input >= entry.dst_start:
+                diff = input - entry.dst_start
+                return entry.src_start + diff
 
         # If we reach this the input is not mapped
         return input
 
-    def shortest_path_to(self, destinationlist):
-        """Find the shortest paths to entries in a given list."""
-        if destinationlist:
-            optimal_src_range = []
-            for destination in enumerate(destinationlist):
-                needed_input = destination
+    def shortest_path_to(self, seedmap):
+        """Find the shortest paths to entries in a given seedmap.
 
-                for entry in self.entries:
-                    if entry.src_from_dst(destination):
-                        needed_input = entry.src_from_dst(destination)
-                        break
+        Seein entries in the seedmap as destinations to find.
+        Returns a new seedmap with sources of this map is the new seeds.
+        """
+        new_seedmap = []
 
-                optimal_src_range.append(needed_input)
-        #This is probably the location map
+        if seedmap:
+            #new_seedmap = {self.get_src(dest): seedmap[dest] for dest in seedmap}
+            new_seedmap = [(self.get_src(dest), loc) for dest, loc in seedmap]
+        # This is probably the location map
+        # so we kickstart this whole thing by making a seedmap
+        # consisting of 0 -> the end of range of lowest mapentry
+        # 0 -> 60 in the examples.
         else:
             optimal_entries = [i.dst_start + i.length for i in self.entries if i.dst_start < i.src_start]
             optimal_entries.sort()
-            optimal_src_range = [True]*optimal_entries[0]
+            #new_seedmap = {self.get_src(id): id for id, dest in enumerate([None]*optimal_entries[0])}
+            new_seedmap = [(self.get_src(id), id) for id, dest in enumerate([None]*optimal_entries[0])]
 
-        print(optimal_src_range)
-
-        return optimal_src_range
+        return new_seedmap
 
     def __repr__(self):
         return f"{self.source}-to-{self.destination}: {self.entries}"
@@ -91,34 +86,17 @@ class Almanac():
         self.maps = []
 
     def determine_shortest_path(self):
-        """Determine a list of possible seeds that leed to a shortest path."""
-        #locationmap = self.maps[-1]
-        #optimal_entries = [i.dst_start + i.length for i in locationmap.entries if i.dst_start < i.src_start]
-        #optimal_entries.sort()
-        #optimal_src_range = [i for i in range(0, optimal_entries[0])]
-        destinationlist = []
+        """Determine a map of seeds and the shortest location they might lead to."""
+        seedmap = []
         for map in self.maps[::-1]:
-            self.seeds = map.shortest_path_to(self.seeds)
+            seedmap = map.shortest_path_to(seedmap)
 
-        return destinationlist
-
-    def resolve_location(self, seed):
-        """Resolve the location of a seed."""
-        map_in = seed
-
-        for map in self.maps:
-            map_in = map.get_destination(map_in)
-
-        return map_in
+        return seedmap
 
     @classmethod
     def from_text(cls, text):
         """Generate a complete almanac from our input."""
         new_almanac = cls()
-
-        # Calc the amount of seeds
-        seedline = text.split('\n')[0]
-        new_almanac.seeds = calc_seeds(seedline.split(':')[1].split(' ')[1:])
 
         # Parse our maps, ignoring the seed line and blank line
         for line in text.split('\n')[2:]:
@@ -141,44 +119,40 @@ class Almanac():
         return f"{self.maps}"
 
 
-def calc_seeds(seedlist):
+def match_seed(pathmap, furthest_location, seedlist):
     """Takes a list of all the seed numbers. Returns a list of seeds."""
-    seeds = []
-    biggest_seed = 0
+    closest_location = furthest_location
+    seed_sets = []
 
     # We create an iterator so we can loop 2 at a time
     seed_iterator = iter(seedlist)
     for seed in seed_iterator:
         seedrange = int(next(seed_iterator))
-        if int(seed) + seedrange > biggest_seed:
-            biggest_seed = int(seed) + seedrange
+        seed_sets.append((int(seed), seedrange))
 
-    # We create a list as big as the amount of seeds, with all set to False
-    seeds = [False]*biggest_seed
+    for seed, loc in pathmap:
+        intseed = int(seed)
+        for start, length in seed_sets:
+            if intseed >= start and intseed <= start+length:
+                if loc < closest_location:
+                    closest_location = loc
 
-    # Now the other way around
-    smallest_seed = biggest_seed
-    seed_iterator = iter(seedlist)
-    for seed in seed_iterator:
-        seedrange = int(next(seed_iterator))
-        if int(seed) < smallest_seed:
-            smallest_seed = int(seed)
-
-    for id, seed in enumerate(seeds):
-        if id > smallest_seed:
-            seeds[id] = True
-
-    return seeds
-
+    return closest_location
 
 def main():
     with open('input', 'r') as f:
-        almanac = Almanac.from_text(f.read())
+        text = f.read()
+        almanac = Almanac.from_text(text)
 
-    print(almanac.seeds)
-    #shortest_path_seeds = almanac.determine_shortest_path()
+    shortest_path_map = almanac.determine_shortest_path()
 
-    # TODO na bovenstaande matchen welke seeds hier aan voldoen, en dan wat daarvan de kortste is
+    furthest_location = 0
+    for seed, loc in shortest_path_map:
+        if loc > furthest_location:
+            furthest_location = loc
+
+    seedline = text.split('\n')[0]
+    print(match_seed(shortest_path_map, furthest_location, seedline.split(':')[1].split(' ')[1:]))
 
 if __name__ == '__main__':
     main()
