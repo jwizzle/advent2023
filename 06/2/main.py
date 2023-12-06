@@ -1,20 +1,6 @@
 #!/usr/bin/env python3
 import re
 
-class Boat():
-    """Represent a raceboat."""
-
-    def __init__(self, time_held):
-        """Construct the boat."""
-        self.startspeed = 0
-        self.increase_per_ms = 1
-        self.time_held = time_held
-        self.speed = time_held*self.increase_per_ms
-
-    def distance(self, time):
-        """Get the distance traveled in given time."""
-        return time*self.speed
-
 class Race():
     """Represent a single race."""
 
@@ -25,15 +11,25 @@ class Race():
         self.win_scenarios = 0
 
     def check_win_scenarios(self):
-        """In what ways can we win this race?"""
-        possibilities = [False]*self.time_limit
+        """In what ways can we win this race?
 
-        for id, possibility in enumerate(possibilities):
-            boat = Boat(id)
-            traveldistance = boat.distance(self.time_limit - id)
-            if traveldistance > self.record: possibilities[id] = True
+        The commented out lines are my initial solution. For reference.
+        The current code being the fastest i've come up with. For the flex.
+        There's probably some math-wizard solution i'm still missing as well.
+        """
+        self.win_scenarios = len({i for i in range(0, int(self.time_limit/2)) if i*(self.time_limit-i) > self.record})*2+1
 
-        self.win_scenarios = len([i for i in possibilities if i])
+#        previous_distance = 0
+#        for i in range(0, self.time_limit):
+#            distance = i*(self.time_limit-i)
+#
+#            if distance < previous_distance and distance < self.record:
+#                break
+#
+#            previous_distance = distance
+#
+#            if distance > self.record:
+#                self.win_scenarios += 1
 
     def __repr__(self):
         """Represent a race."""
