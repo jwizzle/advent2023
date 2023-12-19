@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import copy
+import numpy as np
+import pandas as pd
 
 GALAXY_STR = '#'
 EMTPY_STR = '.'
@@ -37,35 +39,29 @@ class Image():
         self.galaxy_pairs = []
 
     def expand(self):
-        newmatrix = copy.deepcopy(self.matrix)
-        space = 1000000-1
+        newmatrix = pd.DataFrame(data=self.matrix)
+        space = 1000000
 
-        rows_inserted = 0
-        for id, row in enumerate(self.matrix):
-            if not GALAXY_STR in row:
-                empty_row = ['.']*len(row)
-                blankspace = [empty_row]*space
-                newmatrix = newmatrix[:id+rows_inserted] + blankspace + newmatrix[id+rows_inserted:]
-                rows_inserted += space
+        for id in newmatrix.columns:
+            if '#' not in newmatrix.iloc[:, id].unique():
+                newcols = {col: col+space-1 for col in newmatrix.columns[id:]}
+                newmatrix.rename(columns=newcols, inplace=True)
 
-        cols_inserted = 0
-        for id, col in enumerate(self.matrix[0]):
-            whole_col = [row[id] for row in self.matrix]
-            if not GALAXY_STR in whole_col:
-                for row_id, row in enumerate(newmatrix):
-                    newmatrix[row_id] = newmatrix[row_id][:id + cols_inserted] + [EMTPY_STR]*space + newmatrix[row_id][id+cols_inserted:]
-                cols_inserted += space
+        for id in newmatrix.index:
+            if '#' not in newmatrix.iloc[id, :].unique():
+                newrows = {row: row+space-1 for row in newmatrix.index[id:]}
+                newmatrix.rename(index=newrows, inplace=True)
 
         return newmatrix
 
     def number_galaxies(self):
         galaxies = 1
 
-        for row_id, row in enumerate(self.matrix):
-            for col_id, col in enumerate(row):
+        for row_id, row in self.matrix.iterrows():
+            for col_id, col in row.items():
                 if col == GALAXY_STR:
                     newgalaxy = Galaxy(galaxies, row_id, col_id)
-                    self.matrix[row_id][col_id] = newgalaxy
+                    self.matrix[col_id][row_id] = newgalaxy
                     self.galaxies.append(newgalaxy)
                     galaxies += 1
 
