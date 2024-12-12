@@ -208,7 +208,7 @@ def find_loopingmaps(sq, original_map):
         patrolresult = fakemap.patrol_guard()
         if not patrolresult:
             return False
-        elif patrolresult > 3:
+        elif patrolresult > 6:
             return fakemap
 
 
@@ -228,7 +228,7 @@ def main():
     ]
 
     partial_function = partial(find_loopingmaps, original_map=original_map)
-    with Pool(12) as p:
+    with Pool(20) as p:
         looping_maps = p.map(
             partial_function, visited_squares
         )
