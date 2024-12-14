@@ -54,19 +54,15 @@ class TrailHead(Position):
 
     def __init__(self, row, pos, height):
         super().__init__(row, pos, height)
-        self.ends_reached = []
+        self.trails = []
 
     def find_valid_trails(self, matrix):
-        valid_trails = []
-
-        for trail in self.walk(matrix):
-            if trail:
-                self.ends_reached.append(trail)
-
-        return valid_trails
+        return [
+            trail for trail in self.walk(matrix) if trail
+        ]
 
     def get_score(self):
-        return len(set(self.ends_reached))
+        return len(self.trails)
 
 
 class Map():
@@ -79,7 +75,7 @@ class Map():
 
     def find_trails(self):
         for trailhead in self.trailheads:
-            trailhead.find_valid_trails(self.matrix)
+            trailhead.trails = trailhead.find_valid_trails(self.matrix)
 
     @classmethod
     def from_file(cls):
